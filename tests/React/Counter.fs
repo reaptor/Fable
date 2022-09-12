@@ -25,7 +25,7 @@ let Counter(init: int) =
             ]
 
             // Check that fluent-ui bindings work, see #2709
-            !!(Fable.FluentUI.Button.defaultButton [] [ str "A fluent button" ])
+            Fable.FluentUI.Button.defaultButton [] [ str "A fluent button" ]
         ]
     ]
 

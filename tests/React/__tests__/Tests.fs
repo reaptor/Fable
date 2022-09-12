@@ -47,12 +47,12 @@ Jest.describe("React tests", (fun () ->
     ))
 
     Jest.test("SpreadSheet renders correctly", (fun () ->
-        let elem = RTL.render(SpreadSheet.SpreadSheet() |> unbox)
+        let elem = RTL.render(SpreadSheet.SpreadSheet())
         Jest.expect(elem.container).toMatchSnapshot()
     ))
 
     Jest.test("SpreadSheet parser works", (fun () ->
-        let spreadsheet = RTL.render(SpreadSheet.SpreadSheet() |> unbox)
+        let spreadsheet = RTL.render(SpreadSheet.SpreadSheet())
         let cells = spreadsheet.getAllByRole("cell")
         let cell = cells.[5]
         RTL.fireEvent.click(cell)
