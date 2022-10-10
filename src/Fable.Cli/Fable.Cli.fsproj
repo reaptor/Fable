@@ -3,7 +3,8 @@
   <PropertyGroup>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
+    <OtherFlags>$(OtherFlags) --nowarn:3536</OtherFlags>
     <Version>4.0.0</Version>
     <PackageVersion>4.0.0-theta-011</PackageVersion>
     <PackageReleaseNotes>* Python, add read/write files
@@ -45,10 +46,10 @@
     <Reference Include="../../lib/fcs/FSharp.Core.dll" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="17.3.1" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.3.1" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.3.1" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.3.1" ExcludeAssets="runtime" PrivateAssets="all" />
     <PackageReference Include="NuGet.Frameworks" Version="6.3.0" ExcludeAssets="runtime" PrivateAssets="all" />
-    <PackageReference Include="Ionide.ProjInfo" Version="0.60.0" />
+    <PackageReference Include="Ionide.ProjInfo" Version="0.60.2" />
     <PackageReference Include="FSharp.SystemTextJson" Version="0.17.4" />
     <PackageReference Include="source-map-sharp" Version="1.0.8" />
   </ItemGroup>

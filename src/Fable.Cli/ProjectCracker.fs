@@ -65,7 +65,14 @@ let private loadProjects additionalMSBuildProps (projFile: string) =
     // For some reason the main project is not always the first or last entry
     // even though the projects are supposed? to be returned in topological order.
     // We do this manually later, since we also have to sort fable packages anyway.
-    let mainProjIdx = loadedProjects |> Array.findIndex (fun x -> Path.normalizePath x.ProjectFileName = projFile)
+    let mainProjIdx =
+        loadedProjects
+        |> Array.tryFindIndex (fun x -> Path.normalizePath x.ProjectFileName = projFile)
+        |> Option.defaultWith (fun () ->
+            // Maybe we could check `dotnet --version` in advance instead of throwing the error here
+            $"Cannot parse %s{Path.GetFileName(projFile)}, make sure dotnet SDK 6.0.400 or higher is available"
+            |> Fable.FableError |> raise)
+
     let mainProj = loadedProjects[mainProjIdx]
     let refProjs = loadedProjects |> Array.removeAt mainProjIdx
 
@@ -657,7 +664,7 @@ let getFullProjectOpts (opts: CrackerOptions) =
     let cacheInfo =
         opts.CacheInfo |> Option.filter (fun cacheInfo ->
             let cacheTimestamp = cacheInfo.GetTimestamp()
-            let isOlderThanCache filePath =
+            let isOlderThanCache (filePath: string) =
                 let fileTimestamp = IO.File.GetLastWriteTime(filePath)
                 let isOlder = fileTimestamp < cacheTimestamp
                 if not isOlder then
