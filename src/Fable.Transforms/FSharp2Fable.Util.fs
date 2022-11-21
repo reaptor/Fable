@@ -1158,7 +1158,7 @@ module TypeHelpers =
             | _ ->
                 let transformAttrs =
                     match Compiler.Language with
-                    | Language.JavaScript | Language.TypeScript -> [ Atts.stringEnum, Fable.String ]
+                    | Language.JavaScript | Language.TypeScript | Language.Python -> [ Atts.stringEnum, Fable.String ]
                     // Other languages can type erased unions too after fixing tests
                     | _ -> [ Atts.stringEnum, Fable.String; Atts.erase, Fable.Any ]
                 tdef.Attributes

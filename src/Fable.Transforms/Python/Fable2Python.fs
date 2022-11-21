@@ -2,11 +2,11 @@ module rec Fable.Transforms.Fable2Python
 
 open System
 open System.Collections.Generic
+open System.Text.RegularExpressions
 
 open Fable
 open Fable.AST
 open Fable.AST.Python
-open Fable.Py
 
 type ReturnStrategy =
     /// Return last expression
@@ -146,7 +146,7 @@ module Reflection =
             |> Seq.map (fun fi ->
                 let typeInfo, stmts = transformTypeInfo com ctx r genMap fi.FieldType
 
-                (Expression.tuple [ Expression.constant (fi.Name |> Naming.toSnakeCase |> Helpers.clean)
+                (Expression.tuple [ Expression.constant (fi.Name |> Py.Naming.toSnakeCase |> Helpers.clean)
                                     typeInfo ]),
                 stmts)
             |> Seq.toList
@@ -345,7 +345,10 @@ module Reflection =
                     generics
                     |> List.map (transformTypeInfo com ctx r genMap)
                     |> Helpers.unzipArgs
+
                 // Check if the entity is actually declared in Python code
+                printfn "Entity: %A" ent
+                printfn "generics: %A" generics
                 if ent.IsInterface
                    || FSharp2Fable.Util.isErasedOrStringEnumEntity ent
                    || FSharp2Fable.Util.isGlobalOrImportedEntity ent
@@ -762,6 +765,10 @@ module Annotation =
                                    any ]
             ),
             stmts
+        | Fable.DeclaredType({ FullName = Naming.Regex Util.ERASED_UNION _ }, genArgs) ->
+            printfn "GenArgs %A" genArgs
+            stdlibModuleTypeHint com ctx "typing" "Union" genArgs
+
         | Fable.DeclaredType (entRef, genArgs) -> makeEntityTypeAnnotation com ctx entRef genArgs repeatedGenerics
         | _ -> stdlibModuleTypeHint com ctx "typing" "Any" []
 
@@ -831,7 +838,7 @@ module Annotation =
         makeGenericTypeAnnotation com ctx id genArgs None
 
     let makeEntityTypeAnnotation com ctx (entRef: Fable.EntityRef) genArgs repeatedGenerics =
-        // printfn "DeclaredType: %A" entRef.FullName
+        printfn "DeclaredType: %A" entRef.FullName
         match entRef.FullName, genArgs with
         | Types.result, _ ->
             let resolved, stmts = resolveGenerics com ctx genArgs repeatedGenerics
@@ -915,7 +922,7 @@ module Annotation =
             stdlibModuleAnnotation com ctx "typing" "Callable" genArgs, stmts
         | _ ->
             let ent = com.GetEntity(entRef)
-            // printfn "DeclaredType: %A" ent.FullName
+            printfn "DeclaredType: %A" ent.FullName
             if ent.IsInterface then
                 let name = Helpers.removeNamespace ent.FullName
 
@@ -935,6 +942,7 @@ module Annotation =
             else
                 match tryPyConstructor com ctx ent with
                 | Some (entRef, stmts) ->
+                    printfn "entRef: %A" entRef
                     match entRef with
                     (*
                     | Literal(Literal.StringLiteral(StringLiteral(str, _))) ->
@@ -1000,6 +1008,8 @@ module Util =
     open Lib
     open Reflection
     open Annotation
+
+    let ERASED_UNION = Regex(@"^Fable\.Core\.U\d+`\d+$")
 
     let getIdentifier (com: IPythonCompiler) (ctx: Context) (name: string) =
         let name = Helpers.clean name
@@ -1150,7 +1160,7 @@ module Util =
             let name = Identifier "__iter__"
             Expression.name name
         | n ->
-            let n = Naming.toSnakeCase n
+            let n = Py.Naming.toSnakeCase n
 
             (n, Naming.NoMemberPart)
             ||> Naming.sanitizeIdent (fun _ -> false)
@@ -1802,7 +1812,7 @@ module Util =
                     | "ToString" -> "__str__"
                     | _ -> prop
 
-                com.GetIdentifier(ctx, Naming.toSnakeCase name)
+                com.GetIdentifier(ctx, Py.Naming.toSnakeCase name)
 
             let self = Arg.arg "self"
 
@@ -2251,7 +2261,7 @@ module Util =
 
         | Fable.FieldGet i ->
             //printfn "Fable.FieldGet: %A" (fieldName, fableExpr.Type)
-            let fieldName = i.Name |> Naming.toSnakeCase // |> Helpers.clean
+            let fieldName = i.Name |> Py.Naming.toSnakeCase // |> Helpers.clean
 
             let fableExpr =
                 match fableExpr with
@@ -2323,7 +2333,7 @@ module Util =
                 let expr, stmts''' = getExpr com ctx None expr e
                 expr, stmts'' @ stmts'''
             | Fable.FieldSet fieldName ->
-                let fieldName = fieldName |> Naming.toSnakeCase |> Helpers.clean
+                let fieldName = fieldName |> Py.Naming.toSnakeCase |> Helpers.clean
                 get com ctx None expr fieldName false, []
 
         assign range ret value, stmts @ stmts' @ stmts''
@@ -3418,8 +3428,8 @@ module Util =
         ent.FSharpFields
         |> Seq.map (fun field ->
             let name =
-                (Naming.toSnakeCase field.Name, Naming.NoMemberPart)
-                ||> Naming.sanitizeIdent Naming.pyBuiltins.Contains
+                (Py.Naming.toSnakeCase field.Name, Naming.NoMemberPart)
+                ||> Naming.sanitizeIdent Py.Naming.pyBuiltins.Contains
 
             let typ = field.FieldType
 
@@ -3792,7 +3802,7 @@ module Util =
               yield!
                   (ent.FSharpFields
                    |> List.collecti (fun i field ->
-                       let left = get com ctx None thisExpr (Naming.toSnakeCase field.Name) false
+                       let left = get com ctx None thisExpr (Py.Naming.toSnakeCase field.Name) false
 
                        let right = args[i] |> wrapIntExpression field.FieldType
                        assign None left right |> exprAsStatement ctx)) ]
@@ -3879,7 +3889,7 @@ module Util =
             [ for memb in members do
                   let name =
                       memb.DisplayName
-                      |> Naming.toSnakeCase
+                      |> Py.Naming.toSnakeCase
                       |> Helpers.clean
 
                   let abstractMethod = com.GetImportExpr(ctx, "abc", "abstractmethod")
@@ -4036,7 +4046,7 @@ module Util =
                     else
                         None, Alias.alias im.LocalIdent.Value
                 | Some name ->
-                    let name = Naming.toSnakeCase name
+                    let name = Py.Naming.toSnakeCase name
                     Some moduleName, Alias.alias (Identifier(Helpers.clean name), ?asname = im.LocalIdent)
                 | None -> None, Alias.alias (Identifier(moduleName), ?asname = im.LocalIdent))
             |> List.groupBy fst
@@ -4074,7 +4084,7 @@ module Util =
             | "default"
             | "*" -> Path.GetFileNameWithoutExtension(moduleName)
             | _ -> name
-            |> Naming.toSnakeCase
+            |> Py.Naming.toSnakeCase
             |> getUniqueNameInRootScope ctx
             |> Identifier
             |> Some
@@ -4223,7 +4233,7 @@ module Compiler =
               ScopedTypeParams = Set.empty
               TypeParamsScope = 0 }
 
-        //printfn "file: %A" file.Declarations
+        printfn "file: %A" file.Declarations
         let rootDecls = List.collect (transformDeclaration com ctx) file.Declarations
         let typeVars = com.GetAllTypeVars() |> transformTypeVars com ctx
         let importDecls = com.GetAllImports() |> transformImports com

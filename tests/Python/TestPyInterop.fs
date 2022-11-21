@@ -50,6 +50,33 @@ type Props =
     | Names of NameProp array
     | [<Erase>] Custom of key:string * value:obj
 
+[<Erase>]
+type ErasedUnion =
+    | ErasedInt of int
+    | ErasedString of string
+    member this.SayHi() =
+        match this with
+        | ErasedInt i -> sprintf "Hi %i time(s)!" i
+        | ErasedString s -> sprintf "Hi %s!" s
+
+[<Erase>]
+type ErasedUnionWithMultipleFields =
+    | ErasedUnionWithMultipleFields of string * int
+
+[<Erase; RequireQualifiedAccess>]
+type MyErasedUnion2 =
+    | Foo
+    | Ohmy
+    | Bar of float
+    | Baz of int[]
+
+[<Erase(CaseRules.KebabCase); RequireQualifiedAccess>]
+type MyErasedUnion3 =
+    | FooBar
+    | OhMyDear
+    | AnotherNumber of int
+
+
 [<Global("Array")>]
 type PyArray =
     abstract push: item: obj -> unit
@@ -132,5 +159,53 @@ let ``test Decorators work`` () =
         "LOG1: [MATH (code 3)] called 2 time(s)!"
         "LOG2: called 2 time(s)!"
     ]
+
+[<Fact>]
+let ``test Erased union cases work with keyValueList`` () =
+    let props: Props list = [ Custom("Foo", 5); Names [|{Name = "Mikhail"}|] ]
+    let compiletime = [Custom("Bar", 10); Names [|{Name = "Mikhail"}|]]
+                        |> keyValueList CaseRules.LowerFirst
+    let expected = props |> keyValueList CaseRules.LowerFirst
+    compiletime?Bar |> equal 10
+    expected?Foo |> equal 5
+    compiletime?names?(0)?Name |> equal "Mikhail"
+    compiletime?names?(0)?Name |> equal "Mikhail"
+
+[<Fact>]
+let ``test Erased unions with multiple fields work`` () =
+    let gimme (ErasedUnionWithMultipleFields(s, i)) =
+        sprintf "Gimme %i %ss" i s
+    ("apple", 5)
+    |> ErasedUnionWithMultipleFields
+    |> gimme
+    |> equal "Gimme 5 apples"
+
+[<Fact>]
+let ``test Erased unions can have cases representing literal strings`` () =
+    let getValue = function
+        | MyErasedUnion2.Foo -> 5
+        | MyErasedUnion2.Ohmy -> 0
+        | MyErasedUnion2.Bar f -> int f
+        | MyErasedUnion2.Baz xs -> Array.sum xs
+
+    MyErasedUnion2.Bar 4.4 |> getValue |> equal 4
+    MyErasedUnion2.Ohmy |> getValue |> equal 0
+    MyErasedUnion2.Baz [|1;2;3|] |> getValue |> equal 6
+    MyErasedUnion2.Foo |> getValue |> equal 5
+    box MyErasedUnion2.Foo |> equal (box "foo")
+    box MyErasedUnion2.Ohmy |> equal (box "ohmy")
+
+[<Fact>]
+let ``test Erased unions can have case rules`` () =
+    let getValue = function
+        | MyErasedUnion3.FooBar -> 5
+        | MyErasedUnion3.OhMyDear -> 0
+        | MyErasedUnion3.AnotherNumber i -> i
+
+    MyErasedUnion3.AnotherNumber 3 |> getValue |> equal 3
+    MyErasedUnion3.OhMyDear |> getValue |> equal 0
+    MyErasedUnion3.FooBar |> getValue |> equal 5
+    box MyErasedUnion3.OhMyDear |> equal (box "oh-my-dear")
+    box MyErasedUnion3.FooBar |> equal (box "foo-bar")
 
 #endif
