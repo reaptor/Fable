@@ -1,5 +1,5 @@
 ---
-last_commit_released: 63bcd3d90f37cb3934edcc59b5f54f49ffab3896
+last_commit_released: 14f1db6ced67c58c9c7508950f217a48a9636469
 include:
   - ../Fable.Core/
   - ../fable-standalone/
@@ -12,6 +12,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 2.0.2 - 2026-06-08
+
+### 🐞 Bug Fixes
+
+* *(beam)* Collapse array-literal process-dict ref round-trips in FFI/Emit calls (#4626) ([234ee08](https://github.com/reaptor/Fable/commit/234ee0846cf848dbad18d409c341755ad8d11da7))
+* *(beam)* Make Emit $N substitution a single left-to-right pass (#4631) ([48af8db](https://github.com/reaptor/Fable/commit/48af8dba6a92d91115505c62f6a51c6aaa88ac19))
+* *(js/ts)* Throw an error when trying to set non-property memeber inside of `jsOptions` (#4624) ([2d9673f](https://github.com/reaptor/Fable/commit/2d9673fb609f6ae3273576c913929e0f601d8f5d))
+
+<strong><small>[View changes on Github](https://github.com/reaptor/Fable/compare/63bcd3d90f37cb3934edcc59b5f54f49ffab3896..14f1db6ced67c58c9c7508950f217a48a9636469)</small></strong>
 
 ## 2.0.1 - 2026-05-28
 
